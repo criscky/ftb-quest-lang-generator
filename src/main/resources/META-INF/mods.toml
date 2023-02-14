@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[40,)"
+loaderVersion="[36,)"
 license="All rights reserved"
 [[mods]]
 modId="ftbconv"
@@ -10,13 +10,13 @@ description=''' Stuff '''
 [[dependencies.ftbconv]]
     modId="forge"
     mandatory=true
-    versionRange="[40,)"
+    versionRange="[36,)"
     ordering="NONE"
     side="BOTH"
 
 [[dependencies.ftbconv]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.18.2,1.19)"
+    versionRange="[1.16.5,1.17)"
     ordering="NONE"
     side="BOTH"

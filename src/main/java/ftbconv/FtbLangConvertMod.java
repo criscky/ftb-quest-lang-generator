@@ -1,5 +1,6 @@
 package ftbconv;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.brigadier.CommandDispatcher;
@@ -12,19 +13,18 @@ import dev.ftb.mods.ftbquests.quest.*;
 import dev.ftb.mods.ftbquests.quest.loot.RewardTable;
 import dev.ftb.mods.ftbquests.quest.reward.Reward;
 import dev.ftb.mods.ftbquests.quest.task.Task;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.language.LanguageInfo;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.commands.SharedSuggestionProvider;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.client.resources.Language;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.Commands;
+import net.minecraft.command.ISuggestionProvider;
+import net.minecraft.util.Util;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLPaths;
-import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -36,8 +36,8 @@ import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-import static net.minecraft.commands.Commands.literal;
 
 @Mod( "ftbconv" )
 public class FtbLangConvertMod{
@@ -49,15 +49,15 @@ public class FtbLangConvertMod{
 
 	@SubscribeEvent
 	public void serverRegisterCommandsEvent(RegisterCommandsEvent event){
-		CommandDispatcher<CommandSourceStack> commandDispatcher = event.getDispatcher();
+		CommandDispatcher<CommandSource> commandDispatcher = event.getDispatcher();
 
-		RootCommandNode<CommandSourceStack> rootCommandNode = commandDispatcher.getRoot();
-		LiteralCommandNode<CommandSourceStack> commandNode = literal("ftb-lang-convert").executes(context -> {
+		RootCommandNode<CommandSource> rootCommandNode = commandDispatcher.getRoot();
+		LiteralCommandNode<CommandSource> commandNode = Commands.literal("ftb-lang-convert").executes(context -> {
 			return 0;
 		}).build();
 
-		ArgumentCommandNode<CommandSourceStack, String> argumentCommandNode = Commands.argument("lang", StringArgumentType.word()).suggests((C1, c2) -> {
-			return SharedSuggestionProvider.suggest(Minecraft.getInstance().getLanguageManager().getLanguages().stream().map(LanguageInfo::getCode).toList().toArray(new String[0]), c2);
+		ArgumentCommandNode<CommandSource, String> argumentCommandNode = Commands.argument("lang", StringArgumentType.word()).suggests((C1, c2) -> {
+			return ISuggestionProvider.suggest(Minecraft.getInstance().getLanguageManager().getLanguages().stream().map(Language::getCode).collect(Collectors.toList()).toArray(new String[0]), c2);
 		}).executes(Ctx -> {
 			try{
 				File parent = new File(FMLPaths.GAMEDIR.get().toFile(), "ftb-conv");
@@ -82,7 +82,7 @@ public class FtbLangConvertMod{
 				for(int i = 0; i < file.chapterGroups.size(); i++){
 					ChapterGroup chapterGroup = file.chapterGroups.get(i);
 
-					if(!chapterGroup.title.isBlank()){
+					if(!chapterGroup.title.isEmpty()){
 						transKeys.put("category." + (i + 1), chapterGroup.title);
 						chapterGroup.title = "{" + "category." + (i + 1) + "}";
 					}
@@ -93,7 +93,7 @@ public class FtbLangConvertMod{
 
 					String prefix = "chapter." + (i+1);
 
-					if(!chapter.title.isBlank()){
+					if(!chapter.title.isEmpty()){
 						transKeys.put(prefix + ".title", chapter.title);
 						chapter.title = "{" + prefix + ".title" + "}";
 					}
@@ -118,12 +118,12 @@ public class FtbLangConvertMod{
 					for(int i1 = 0; i1 < chapter.quests.size(); i1++){
 						Quest quest = chapter.quests.get(i1);
 
-						if(!quest.title.isBlank()){
+						if(!quest.title.isEmpty()){
 							transKeys.put(prefix + ".quest." + (i1+1) + ".title", quest.title);
 							quest.title = "{" + prefix + ".quest." + (i1+1) + ".title}";
 						}
 
-						if(!quest.subtitle.isBlank()){
+						if(!quest.subtitle.isEmpty()){
 							transKeys.put(prefix + ".quest." + (i1+1) + ".subtitle", quest.subtitle);
 							quest.subtitle = "{" + prefix + ".quest." + (i1+1) + ".subtitle" + "}";
 						}
@@ -140,7 +140,7 @@ public class FtbLangConvertMod{
 								final String regex = "\\{image:.*?}";
 
 								if(desc.contains("{image:")){
-									if(!joiner.toString().isBlank()){
+									if(!joiner.toString().isEmpty()){
 										transKeys.put(prefix + ".quest." + (i1+1) + ".description." + num, joiner.toString());
 										descList.add("{" + prefix + ".quest." + (i1+1) + ".description." + num + "}");
 										joiner = new StringJoiner("\n");
@@ -155,7 +155,7 @@ public class FtbLangConvertMod{
 										descList.add(matcher.group(0));
 									}
 								}else{
-									if(desc.isBlank()){
+									if(desc.isEmpty()){
 										joiner.add("\n");
 									}else{
 										joiner.add(desc);
@@ -163,7 +163,7 @@ public class FtbLangConvertMod{
 								}
 							}
 
-							if(!joiner.toString().isBlank()){
+							if(!joiner.toString().isEmpty()){
 								transKeys.put(prefix + ".quest." + (i1+1) + ".description." + num, joiner.toString());
 								descList.add("{" + prefix + ".quest." + (i1+1) + ".description." + num + "}");
 							}
@@ -175,7 +175,7 @@ public class FtbLangConvertMod{
 						for(int i2 = 0; i2 < quest.tasks.size(); i2++){
 							Task task = quest.tasks.get(i2);
 
-							if(!task.title.isBlank()){
+							if(!task.title.isEmpty()){
 								transKeys.put(prefix + ".quest." + (i1+1) + ".task." + (i2+1) + ".title", task.title);
 								task.title = "{" + prefix + ".quest." + (i1+1) + ".task." + (i2+1) + ".title}";
 							}
@@ -184,7 +184,7 @@ public class FtbLangConvertMod{
 						for(int i2 = 0; i2 < quest.rewards.size(); i2++){
 							Reward reward = quest.rewards.get(i2);
 
-							if(!reward.title.isBlank()){
+							if(!reward.title.isEmpty()){
 								transKeys.put(prefix + ".quest." + (i1+1) + ".reward." + (i2+1) + ".title", reward.title);
 								reward.title = "{" + prefix + ".quest." + (i1+1) + ".reward." + (i2+1) + ".title}";
 							}
@@ -203,7 +203,7 @@ public class FtbLangConvertMod{
 					saveLang(transKeys, "en_us", transFiles);
 				}
 
-				Ctx.getSource().getPlayerOrException().sendMessage(new TextComponent("FTB quests files exported to: " + parent.getAbsolutePath()), Util.NIL_UUID);
+				Ctx.getSource().getPlayerOrException().sendMessage(new StringTextComponent("FTB quests files exported to: " + parent.getAbsolutePath()), Util.NIL_UUID);
 
 			}catch(Exception e){
 				e.printStackTrace();
